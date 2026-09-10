@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Venix</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ff8c00">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <style>
+    :root{
+      --gap: 10px;
+      --brand-start: #ff3b30; /* rojo */
+      --brand-mid: #ff8c00;   /* naranja */
+      --brand-end:  #ffd400;  /* amarillo */
+      --brand: linear-gradient(135deg,var(--brand-start),var(--brand-mid),var(--brand-end));
+      --contrast-color: #071023;
+      --card-bg: #fff;
+      --muted: #6b7280;
+      --max-width: 1200px;
+    }
+
+    /* Reset */
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg,#fff7f2,#fffdf8);
+      color:var(--contrast-color);
+      display:flex;
+      justify-content:center;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    .app{width:100%;max-width:var(--max-width);padding:12px}
+
+    /* Top row */
+    .top-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+    .brand{display:flex;gap:8px;align-items:center;font-weight:800;font-size:1.15rem;color:var(--contrast-color)}
+    .brand .logo{width:44px;height:44px;border-radius:10px;background:var(--brand);display:flex;align-items:center;justify-content:center;color:white; font-weight:900}
+
+    .controls{display:flex;gap:6px;align-items:center}
+    .btn{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.95);box-shadow:0 1px 2px rgba(16,24,40,0.04);border:1px solid rgba(15,23,42,0.03);cursor:pointer;touch-action:manipulation}
+    .btn:active{transform:scale(0.96)}
+
+    /* Grid */
+    .grid{display:grid;gap:var(--gap);grid-auto-flow:dense;margin-bottom:16px}
+    .card{background:var(--card-bg);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:10px;box-shadow:0 6px 18px rgba(13, 38, 59, 0.06);border:1px solid rgba(15,23,42,0.04);user-select:none;transition:transform .12s, box-shadow .12s}
+    .card:active{transform:scale(0.98)}
+    .card:hover{transform:translateY(-6px)}
+    .card .title{font-weight:800;font-size:1rem;text-shadow:0 1px 0 rgba(255,255,255,0.4)}
+    .card .meta{font-size:0.78rem;color:var(--muted)}
+    .card .stats{font-size:0.78rem;color:var(--contrast-color);font-weight:700}
+
+    .span-1{grid-column:span 1;grid-row:span 1}
+    .span-2{grid-column:span 2;grid-row:span 2}
+    .span-3{grid-column:span 3;grid-row:span 2}
+
+    .ad-slot{display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,#fff3e0,#fffdf0);border:1px dashed rgba(0,0,0,0.04);color:var(--muted);font-size:0.9rem;border-radius:8px;padding:8px}
+
+    /* Mobile-first grid: 3 cols, row~90px */
+    .grid{grid-template-columns: repeat(3, 1fr);grid-auto-rows:90px}
+
+    @media (max-width:767px){
+      .grid .span-2,.grid .span-3{grid-column:span 1 !important;grid-row:span 1 !important}
+      .grid{grid-auto-rows:92px}
+      @media (max-width:479px){
+        .ad-slot{display:none}
+      }
+    }
+
+    @media (min-width:769px) and (max-width:1024px){
+      .grid{grid-template-columns: repeat(5, 1fr);grid-auto-rows:105px}
+      .grid .span-3{grid-column:span 2}
+    }
+
+    @media (min-width:1025px){
+      .grid{grid-template-columns: repeat(7, 1fr);grid-auto-rows:105px}
+    }
+
+    /* Install button */
+    .install-btn{position:fixed;right:16px;bottom:16px;z-index:9999;background:var(--brand);color:#071023;padding:12px 14px;border-radius:999px;box-shadow:0 6px 20px rgba(255,140,0,0.18);display:inline-flex;gap:8px;align-items:center;font-weight:800;cursor:pointer;min-height:44px;min-width:44px}
+    .install-btn[hidden]{display:none}
+    .btn:focus,.install-btn:focus{outline:3px solid rgba(255,140,0,0.18);outline-offset:2px}
+
+    /* Modal / Game UI */
+    .overlay{position:fixed;inset:0;background:rgba(2,6,23,0.55);display:flex;align-items:center;justify-content:center;z-index:9998}
+    .modal{width:min(720px,94vw);background:linear-gradient(180deg,#fff,#fff9f1);border-radius:12px;padding:16px;box-shadow:0 20px 60px rgba(2,6,23,0.3);display:flex;flex-direction:column;gap:12px}
+    .game-area{height:240px;border-radius:8px;background:#fff7ed;display:flex;align-items:center;justify-content:center;flex-direction:column}
+    .big-score{font-size:2.2rem;font-weight:900;color:#ff6a00}
+    .play-btn{background:var(--brand);color:white;padding:10px 14px;border-radius:10px;font-weight:800;border:none;cursor:pointer}
+
+    /* confetti particle */
+    .confetti{pointer-events:none;position:fixed;inset:0;z-index:9999}
+
+    /* small badge */
+    .level-badge{display:inline-block;background:linear-gradient(90deg,#fff,rgba(255,255,255,0.3));padding:6px 8px;border-radius:999px;font-weight:800;color:#9a3b00}
+
+    /* subtle animations */
+    @keyframes pop {0%{transform:scale(.96)}50%{transform:scale(1.04)}100%{transform:scale(1)}}
+
+    .level-up{animation:pop .36s ease}
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Venix">
+    <div class="top-row" role="region" aria-label="Barra superior">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">V</div>
+        <div>
+          <div>Venix</div>
+          <div style="font-size:0.75rem;color:var(--muted)">Multidispositivo · PWA · Diviértete</div>
+        </div>
+      </div>
+
+      <div class="controls" role="toolbar" aria-label="Controles">
+        <button class="btn" aria-label="Buscar" title="Buscar">🔍</button>
+        <button class="btn" aria-label="Perfil" title="Perfil">👤</button>
+      </div>
+    </div>
+
+    <main>
+      <section id="grid" class="grid" aria-label="Listado de juegos">
+        <!-- Cards injected via JS -->
+      </section>
+    </main>
+  </div>
+
+  <button id="installBtn" class="install-btn" hidden title="Instalar App">⬇ Instalar App</button>
+
+  <div id="overlay" class="overlay" style="display:none" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Mini juego">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:900">Mini-juego: Tap Frenzy</div>
+        <div><button id="closeModal" class="btn" aria-label="Cerrar">✖</button></div>
+      </div>
+      <div class="game-area" id="gameArea">
+        <div style="font-size:0.9rem;color:var(--muted)">Toca tan rápido como puedas durante <span id="timer">3</span>s</div>
+        <div class="big-score" id="score">0</div>
+        <button id="tapBtn" class="play-btn">TAP!</button>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="meta">Gana XP por tu desempeño y sube de nivel</div>
+        <div id="resultMsg" style="font-weight:800;color:#ff6a00"></div>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="confetti" class="confetti"></canvas>
+
+  <script src="./config.js"></script>
+  <script>
+    // SW registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW reg error:', err));
+      });
+    }
+
+    // beforeinstallprompt handling
+    let deferredPrompt;
+    const installBtn = document.getElementById('installBtn');
+    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.hidden = false; installBtn.setAttribute('aria-hidden','false'); });
+    installBtn.addEventListener('click', async () => { installBtn.hidden = true; if (!deferredPrompt) return; deferredPrompt.prompt(); deferredPrompt = null; });
+
+    /* Persistence */
+    const STORAGE_KEY = 'venix_play_data';
+    function loadPlayData() { try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : {}; } catch (e) { console.error(e); return {}; } }
+    function savePlayData(data) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e){console.error(e);} }
+    function getStats(gameId) { const s = loadPlayData(); return s[gameId] || {id:gameId,name:'',plays:0,xp:0,lastPlayed:null}; }
+    function setStats(gameId, obj) { const s = loadPlayData(); s[gameId]=obj; savePlayData(s); }
+
+    function addXP(gameId, gameName, xpGain) {
+      const s = loadPlayData(); if (!s[gameId]) s[gameId]={id:gameId,name:gameName,plays:0,xp:0,lastPlayed:null};
+      const before = s[gameId].xp;
+      s[gameId].plays += 1; s[gameId].xp += xpGain; s[gameId].lastPlayed = new Date().toISOString(); savePlayData(s);
+      const leveledUp = levelForXP(before) < levelForXP(s[gameId].xp);
+      return {stats:s[gameId], leveledUp};
+    }
+
+    function levelForXP(xp){ return Math.floor(xp/100)+1 }
+
+    /* Curated games */
+    const curatedGames = [
+      { id: 'penalty-shooters-2', name: 'Penalty Shooters 2', span:3 },
+      { id: 'level-devil', name: 'Level Devil', span:2 },
+      { id: 'goods-master', name: 'Goods Master', span:2 },
+      { id: 'vortella-dress', name: "Vortella's Dress Up", span:2 },
+      { id: 'super-dress', name: 'Super Dress', span:1 },
+      { id: 'beauty-salon', name: 'Beauty Salon', span:1 },
+      { id: 'rail-in-the-air', name: 'Rail in the Air', span:1 },
+      { id: 'kick-the-buddy', name: 'Kick The Buddy', span:1 },
+      { id: 'blumgi-soccer', name: 'Blumgi Soccer', span:1 },
+      { id: 'papas-burgeria', name: "Papa's Burgeria", span:1 },
+      { id: 'ragdoll-chaos', name: 'Ragdoll Chaos', span:1 },
+      { id: 'master-chess', name: 'Master Chess', span:1 },
+      { id: 'drive-mad', name: 'Drive Mad', span:1 },
+      { id: 'papas-freezeria', name: "Papa's Freezeria", span:1 },
+      { id: 'true-love-calculator', name: 'True Love Calculator', span:1 },
+      { id: 'car-circle', name: 'Car Circle', span:1 },
+      { id: 'planet-destruction', name: 'Planet Destruction', span:1 },
+      { id: 'scary-teacher-3d', name: 'Scary Teacher 3D', span:1 },
+      { id: 'stickman-hook', name: 'Stickman Hook', span:1 }
+    ];
+
+    function createCard(game) {
+      const saved = getStats(game.id);
+      const card = document.createElement('article');
+      card.className = 'card span-' + (game.span || 1);
+      card.setAttribute('role','button'); card.setAttribute('tabindex','0'); card.setAttribute('aria-label', game.name);
+      card.style.backgroundImage = `linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02)), url('https://picsum.photos/seed/${game.id}/600/400')`;
+      card.style.backgroundSize='cover';
+
+      const top = document.createElement('div');
+      const title = document.createElement('div'); title.className='title'; title.textContent = game.name;
+      const meta = document.createElement('div'); meta.className='meta'; meta.textContent = `${game.span}×${game.span>1?2:1} · Juego`;
+      top.appendChild(title); top.appendChild(meta);
+
+      const bottom = document.createElement('div');
+      const statsEl = document.createElement('div'); statsEl.className='stats'; statsEl.textContent = `Jugado: ${saved.plays} · XP: ${saved.xp} · Nivel ${levelForXP(saved.xp)}`;
+      bottom.appendChild(statsEl);
+
+      // Play button
+      const playBtn = document.createElement('button'); playBtn.className='play-btn'; playBtn.textContent='Jugar'; playBtn.style.marginTop='8px';
+      bottom.appendChild(playBtn);
+
+      card.appendChild(top); card.appendChild(bottom);
+
+      playBtn.addEventListener('click', (e)=>{ e.stopPropagation(); openMiniGame(game); });
+      card.addEventListener('click', ()=>{ /* open preview or same game */ openMiniGame(game);} );
+      card.addEventListener('keydown', (ev)=>{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); openMiniGame(game);} });
+
+      // helper to update stats text when changed
+      card.updateStats = function(){ const s = getStats(game.id); statsEl.textContent = `Jugado: ${s.plays} · XP: ${s.xp} · Nivel ${levelForXP(s.xp)}`; if (s.justLeveled) { statsEl.classList.add('level-up'); setTimeout(()=>statsEl.classList.remove('level-up'),400); }};
+
+      return card;
+    }
+
+    function mountGames(list) {
+      const container = document.getElementById('grid'); container.innerHTML='';
+      list.forEach(g=>{ container.appendChild(createCard(g)); });
+      // ad slots
+      const ad1 = document.createElement('div'); ad1.className='ad-slot span-2'; ad1.textContent='Espacio Publicitario 1';
+      const ad2 = document.createElement('div'); ad2.className='ad-slot span-3'; ad2.textContent='Espacio Publicitario 2';
+      if (container.children.length >= 4) container.insertBefore(ad1, container.children[4]); container.appendChild(ad2);
+    }
+
+    /* Mini-game: Tap Frenzy */
+    const overlay = document.getElementById('overlay'); const closeModal = document.getElementById('closeModal'); const tapBtn = document.getElementById('tapBtn'); const timerEl = document.getElementById('timer'); const scoreEl = document.getElementById('score'); const resultMsg = document.getElementById('resultMsg');
+    let currentGame=null; let running=false; let score=0; let timeLeft=3; let timerId=null;
+
+    closeModal.addEventListener('click', closeGame);
+    function openMiniGame(game){ currentGame=game; overlay.style.display='flex'; overlay.setAttribute('aria-hidden','false'); score=0; scoreEl.textContent='0'; resultMsg.textContent=''; timeLeft=CONFIG.GAME_SECONDS || 3; timerEl.textContent=timeLeft; running=false; }
+    function closeGame(){ overlay.style.display='none'; overlay.setAttribute('aria-hidden','true'); if (timerId) clearInterval(timerId); running=false; }
+
+    tapBtn.addEventListener('click', ()=>{ if (!running) startRun(); else score++; scoreEl.textContent=score; });
+    function startRun(){ running=true; score=0; scoreEl.textContent='0'; timeLeft=CONFIG.GAME_SECONDS || 3; timerEl.textContent=timeLeft; timerId = setInterval(()=>{ timeLeft--; timerEl.textContent=timeLeft; if (timeLeft<=0){ endRun(); } },1000); }
+    function endRun(){ clearInterval(timerId); running=false; const base = CONFIG.XP_PER_PLAY || 10; const bonus = Math.min(100, score*5); const totalXP = base + bonus; const res = addXP(currentGame.id, currentGame.name, totalXP); // res.leveledUp
+      resultMsg.textContent = `+${totalXP} XP (${base} base + ${bonus} bonus)`;
+      // update cards
+      document.querySelectorAll('.card').forEach(c=>{ if(c.getAttribute('aria-label')===currentGame.name) { const s = getStats(currentGame.id); c.querySelector('.stats').textContent = `Jugado: ${s.plays} · XP: ${s.xp} · Nivel ${levelForXP(s.xp)}`; if (res.leveledUp) triggerLevelUp(c); } });
+      if (res.leveledUp) { confettiBurst(); playSound('level'); }
+      else playSound('ding');
+    }
+
+    function triggerLevelUp(card){ const el = card.querySelector('.stats'); el.classList.add('level-up'); setTimeout(()=>el.classList.remove('level-up'),800); }
+
+    /* Confetti simple */
+    const canvas = document.getElementById('confetti'); const ctx = canvas.getContext('2d'); let confettiParts=[]; function resizeC(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; } window.addEventListener('resize', resizeC); resizeC();
+    function confettiBurst(){ confettiParts = []; const colors = ['#ff3b30','#ff8c00','#ffd400','#ff6a00','#ffb74d']; for(let i=0;i<80;i++){ confettiParts.push({ x: Math.random()*canvas.width, y:-20, vx:(Math.random()-0.5)*6, vy:Math.random()*6+2, size:Math.random()*6+4, color:colors[Math.floor(Math.random()*colors.length)], rot:Math.random()*360, vr:(Math.random()-0.5)*10 }); } requestAnimationFrame(updateConfetti); setTimeout(()=>{ confettiParts=[]; ctx.clearRect(0,0,canvas.width,canvas.height); }, 3000); }
+    function updateConfetti(){ ctx.clearRect(0,0,canvas.width,canvas.height); for(let p of confettiParts){ p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.rot += p.vr; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180); ctx.fillStyle = p.color; ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*0.6); ctx.restore(); } if(confettiParts.length) requestAnimationFrame(updateConfetti); }
+
+    /* Simple sounds (WebAudio) */
+    const audioCtx = (window.AudioContext||window.webkitAudioContext) ? new (window.AudioContext||window.webkitAudioContext)() : null;
+    function playSound(type){ if(!audioCtx) return; const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); if(type==='level'){ o.frequency.value=880; g.gain.value=0.02; o.start(); setTimeout(()=>{ o.frequency.value=660; },80); setTimeout(()=>{ o.stop(); },260); } else { o.frequency.value=520; g.gain.value=0.02; o.start(); setTimeout(()=>{ o.stop(); },120); } }
+
+    // Init
+    (async function init(){
+      const finalList = curatedGames; mountGames(finalList);
+      // warm default stats structure
+      const s = loadPlayData(); for(const g of curatedGames){ if(!s[g.id]) s[g.id]={id:g.id,name:g.name,plays:0,xp:0,lastPlayed:null}; }
+      savePlayData(s);
+    })();
+
+    // helper: load/save functions (re-declare to be safe)
+    function loadPlayData(){ try{ const raw = localStorage.getItem(STORAGE_KEY); return raw?JSON.parse(raw):{} } catch(e){return{}} }
+    function savePlayData(data){ try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(data)); } catch(e){} }
+
+  </script>
+</body>
+</html>
